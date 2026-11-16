@@ -1,5 +1,5 @@
 ---
-sidebar_position: 6
+sidebar_position: 7
 title: 'Visualize a transaction'
 description: 'Visualize a transaction'
 ---

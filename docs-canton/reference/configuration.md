@@ -1,0 +1,41 @@
+---
+sidebar_position: 4
+title: 'Configuration'
+description: 'Config file and environment variables for dpm trace'
+---
+
+Set the connection options once in a config file or in environment variables, instead of passing them on every command.
+
+## Config file
+
+`dpm trace` reads a `.dpm-trace.json` file:
+```json
+{
+  "ledgerUrl": "https://participant.example.com",
+  "readAs": "<party-id>",
+  "tokenFile": "<path-to-token-file>"
+}
+```
+`dpm trace` looks for the file in the current directory first, then in each parent directory. It stops at the first directory that contains `.git` or `daml.yaml`.
+
+To use a file in another location, pass `--config <file>`.
+
+:::warning
+If the file holds a token, do not commit it.
+:::
+
+With the file in place, the command is shorter:
+```bash
+dpm trace <update-id>
+```
+
+## Settings
+
+| Config key | Flag | Environment variable |
+| --- | --- | --- |
+| `ledgerUrl` | `--submitter` | `DPM_TRACE_LEDGER_URL` |
+| `readAs` | `--read-as` | `DPM_TRACE_READ_AS` |
+| `token` | `--token` | `DPM_TRACE_TOKEN` |
+| `tokenFile` | `--token-file` | `DPM_TRACE_TOKEN_FILE` |
+
+If you set the same option in more than one place, `dpm trace` uses the flag first, then the environment variable, then the config file.

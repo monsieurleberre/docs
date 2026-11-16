@@ -1,12 +1,21 @@
 ---
 sidebar_position: 1
 title: 'Connect to a remote participant'
-description: 'Connect to a participant that requires a token, and set defaults'
+description: 'Get a token and trace updates on a participant that requires one'
 ---
 
 Use this guide to trace updates on a participant that requires a token, for example a validator you do not run yourself. You do not need the example ledger to be running.
 
-Pass the participant's JSON Ledger API URL, the party to read as, and a bearer token. Use `--token-file` to keep the token out of your shell history:
+## Get a token
+
+A participant that requires a token checks it on every request to its JSON Ledger API. The token identifies the ledger user making the request. `dpm trace` sends the token you give it as a bearer token and does not fetch one itself, so get one from the identity provider the participant uses:
+
+- On the [Canton Network QuickStart](https://github.com/digital-asset/cn-quickstart) with OAuth2 enabled, the identity provider is the bundled [Keycloak](https://www.keycloak.org/), an open-source identity server. Request a token for your app's client with the OAuth2 client credentials flow, and save the `access_token` field of the response to `token.txt`.
+- On a hosted validator, ask its operator for a token.
+
+## Trace an update with the token
+
+Pass the participant's JSON Ledger API URL, the party to read as, and the token. Use `--token-file` to keep the token out of your shell history:
 ```bash
 dpm trace <update-id> \
   --submitter https://participant.example.com \
@@ -15,19 +24,11 @@ dpm trace <update-id> \
 ```
 Use `--token <token>` to pass the token on the command line.
 
-## Find an update id
-
-- `dpm trace submit` prints the update id of the command it sends.
-- For a command your app sent, look up its command id: `dpm trace --command-id <command-id> --act-as '<party-id>'`. See [Find a command by its id](./find-a-command-by-its-id.md).
-- Many app backends log the update id, or the command id, after each submission.
-
-## Get a token
-
-`dpm trace` sends the token as a bearer token and does not fetch one itself. Get it from the identity provider the participant uses. On LocalNet or the QuickStart with OAuth2, that is the bundled Keycloak: request a token for your app's client with the OAuth2 client credentials flow and save the `access_token` field to `token.txt`. On a hosted validator, ask its operator for a token.
+To set the URL, party and token once instead of on every command, see [Configuration](../reference/configuration.md).
 
 ## Check the user's rights
 
-The token belongs to a ledger user, and the user needs rights for the party you pass:
+The ledger user the token identifies needs rights for the party you pass:
 
 | Command | Right |
 | --- | --- |
@@ -48,29 +49,3 @@ curl -H "Authorization: Bearer $(cat token.txt)" \
   https://participant.example.com/v2/users/<user-id>/rights
 ```
 Look for `CanReadAs` or `CanActAs` with the party you pass to `--read-as`.
-
-## Set defaults
-
-To stop repeating the options, put them in a `.dpm-trace.json` file in your project directory:
-```json
-{
-  "ledgerUrl": "https://participant.example.com",
-  "readAs": "<party-id>",
-  "tokenFile": "<path-to-token-file>"
-}
-```
-`dpm trace` looks for the file in the current directory and its parents, and stops at the project root, the first directory that has a `.git` or a `daml.yaml`. Use `--config <file>` to point to a different file. `ledgerUrl` replaces `--submitter`, `readAs` replaces `--read-as`, and `token` and `tokenFile` replace `--token` and `--token-file`. Do not commit a file that holds a token.
-
-Each setting also has an environment variable: `DPM_TRACE_LEDGER_URL`, `DPM_TRACE_READ_AS`, `DPM_TRACE_TOKEN` and `DPM_TRACE_TOKEN_FILE`. A flag wins over an environment variable, which wins over the config file.
-
-With the settings in place, the command is shorter:
-```bash
-dpm trace <update-id>
-```
-
-## Wait for an update on another participant
-
-When you trace an update on a different participant than the one that took the submission, the update may not have arrived yet. Add `--wait <seconds>` to retry until it is visible. Here `$LEDGER2` is the second participant's JSON Ledger API URL and `$BOB` is a party it hosts, as set by the example ledger's `up.sh`:
-```bash
-dpm trace <update-id> --submitter "$LEDGER2" --read-as "$BOB" --wait 10
-```

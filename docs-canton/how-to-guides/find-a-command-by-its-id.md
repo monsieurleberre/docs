@@ -1,5 +1,5 @@
 ---
-sidebar_position: 2
+sidebar_position: 3
 title: 'Find a command by its ID'
 description: 'Find a command by its ID'
 ---

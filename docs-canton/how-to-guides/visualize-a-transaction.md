@@ -1,5 +1,5 @@
 ---
-sidebar_position: 6
+sidebar_position: 7
 title: 'Visualize a transaction'
 description: 'Visualize a transaction'
 ---
@@ -191,6 +191,8 @@ dpm-trace[Alice]> q
 dpm trace 12205436b20e0bf35b0b4c982dbf0070866ae2d270bbc298ff025fb6cbfe2da692a5 \
   --submitter "$LEDGER2" --read-as "$BOB" --visualize
 ```
+If you run this right after the transfer, the update may not have reached `participant2` yet. Add `--wait <seconds>` to retry until it is visible.
+
 Output:
 ```bash
 update:      12205436b20e0bf35b0b4c982dbf0070866ae2d270bbc298ff025fb6cbfe2da692a5

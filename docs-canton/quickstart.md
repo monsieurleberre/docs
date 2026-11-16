@@ -130,3 +130,5 @@ dpm trace 12208cc4c75617b64417ef7d2b3a5a4352156b1082e6ca2d0569686eecd1e9f82cab \
   --submitter "$LEDGER2" --read-as "$BOB"
 ```
 The answer is the same `UPDATE_NOT_FOUND`, now with `"participant":"participant2"` in its context, because even on his own participant `Bob` is not a stakeholder of this asset.
+
+To trace updates on your own participant instead of the example ledger, see [Connect to a remote participant](./how-to-guides/connect-to-a-remote-participant.md).

@@ -16,7 +16,7 @@ Set the connection options once in a config file or in environment variables, in
   "tokenFile": "<path-to-token-file>"
 }
 ```
-`dpm trace` looks for the file in the current directory first, then in each parent directory. It stops at the first directory that contains `.git` or `daml.yaml`.
+`dpm trace` looks for the file in the current directory. If the current directory or a parent contains `.git`, `daml.yaml` or `component.yaml`, it also looks in each parent directory up to the nearest one that does, and stops there.
 
 To use a file in another location, pass `--config <file>`.
 

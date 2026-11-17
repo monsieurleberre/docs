@@ -6,13 +6,15 @@ description: 'Run tests in CI'
 
 `dpm trace test` runs your Daml Script tests, prints each test's transaction tree, points every failure to the Daml line that caused it, and exits with a non-zero code when a test fails, so the CI job fails too.
 
-It needs Daml Script tests and DPM installed. It does not need the example ledger. The examples below run it on [examples/asset](https://github.com/walnuthq/dpm-trace/tree/main/examples/asset), which keeps its templates in `daml/` and its Script tests in a separate `unittests/` package that depends on the asset DAR.
+It needs Daml Script tests and DPM installed. It does not need the example ledger. The examples below run it on [examples/asset](https://github.com/walnuthq/dpm-trace/tree/main/examples/asset), which keeps its templates in `daml/` and its Script tests in a separate `unittests/` package that depends on the asset DAR. `Asset` implements the Splice Token Standard `Holding` interface, and both packages pull the Splice DARs from GitHub as [git dependencies](https://github.com/walnuthq/dpm-trace/tree/main/examples#git-dar-dependencies) pinned to a commit, so they need DPM 1.1 or newer and SDK 3.6 or newer.
 
-Build both packages from the package directory:
+Fetch the git dependencies, then build both packages from the package directory:
 ```bash
+dpm install package
+(cd unittests && dpm install package)
 dpm build --all
 ```
-This builds the asset DAR before the test package that depends on it.
+`dpm build` does not fetch git dependencies, so run `dpm install package` first on a new machine or CI runner. `dpm build --all` builds the asset DAR before the test package that depends on it.
 
 Then run the tests in `unittests/`:
 ```bash
@@ -23,7 +25,7 @@ dpm trace test unittests --files daml/Test.daml --no-trees
 DPM trace test
   package:  <package-dir>/unittests
   command:  dpm test --files daml/Test.daml
-  result:   all 10 passed (10 total)
+  result:   all 11 passed (11 total)
 
 Results
   PASS  setup                       no transactions
@@ -35,6 +37,7 @@ Results
   PASS  testSplit                   2 tx  +3 create  >1 exercise  x1 archive
   PASS  testStrangerCannotTransfer  2 tx  +1 create  !1 expected-fail
   PASS  testTransfer                2 tx  +2 create  >1 exercise  x1 archive
+  PASS  testAssetIsHolding          1 tx  +1 create
   PASS  testDuplicateKey            3 tx  +3 create  >1 exercise  x1 archive  !1 expected-fail
 ```
 The header shows:
@@ -70,14 +73,14 @@ Output:
                       ^
           28 |     exerciseCmd cid Split with splitQuantity = 0
           29 |   pure ()
-        <package-dir>/daml/Asset.daml:37:20
+        <package-dir>/daml/Asset.daml:41:20
         basis: damlc inspect: Asset
-          35 |       controller owner
-          36 |       do
-        > 37 |         assertMsg "splitQuantity must be between 1 and quantity - 1"
+          39 |       controller owner
+          40 |       do
+        > 41 |         assertMsg "splitQuantity must be between 1 and quantity - 1"
                                   ^
-          38 |           (splitQuantity > 0 && splitQuantity < quantity)
-          39 |         kept <- create this with quantity = quantity - splitQuantity
+          42 |           (splitQuantity > 0 && splitQuantity < quantity)
+          43 |         kept <- create this with quantity = quantity - splitQuantity
 ```
 `message` is the error. The first snippet is the command that was submitted, and the second is the assertion in `Asset.daml` that rejected it, confirmed in the compiled DAR by `damlc inspect`. Without the two `--daml-yaml` flags and `--dar`, only the first snippet is printed:
 ```bash
@@ -113,7 +116,7 @@ Transaction trees
 
   ── testSplit ──
   Transactions:
-    TX 0 1970-01-01T00:00:00Z (Test:50:10)
+    TX 0 1970-01-01T00:00:00Z (Test:51:10)
     #0:0
     │   consumed by: #1:0
     │   referenced by #1:0
@@ -122,7 +125,7 @@ Transaction trees
                           with
                             issuer = 'Issuer-d4d95138'; owner = 'Alice-9b3970be'; name = "GOLD"; quantity = 100
 
-    TX 1 1970-01-01T00:00:00Z (Test:52:20)
+    TX 1 1970-01-01T00:00:00Z (Test:53:20)
     #1:0
     │   disclosed to (since): 'Alice-9b3970be' (1), 'Issuer-d4d95138' (1)
     └─> 'Alice-9b3970be' exercises Split on #0:0 (Asset:Asset@<package-id>)
@@ -147,7 +150,7 @@ Transaction trees
 ```
 The command exits with a non-zero code when a test fails or cannot run, so a CI job fails in both cases. The exit codes and the other flags are listed under `test` in [Commands](../reference/commands.md).
 
-To run it in GitHub Actions, install DPM and the Daml SDK, build both DARs, and call `dpm-trace test` as a step:
+To run it in GitHub Actions, install DPM and the Daml SDK, fetch the git dependencies, build both DARs, and call `dpm-trace test` as a step:
 ```yaml
 jobs:
   unit-tests:
@@ -159,8 +162,13 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install DPM and the Daml SDK
         run: |
-          curl -sSL https://get.digitalasset.com/install/install.sh | sh -s 3.5.1
+          curl -sSL https://get.digitalasset.com/install/install.sh | sh -s 3.7.1
           echo "$HOME/.dpm/bin" >> "$GITHUB_PATH"
+      - name: Fetch git dependencies
+        run: |
+          dpm install package
+          (cd unittests && dpm install package)
+          dpm update --check
       - name: Build the DARs
         run: dpm build --all
       - name: Run Daml Script tests
@@ -175,6 +183,7 @@ jobs:
 ```
 In this workflow:
 
+- `dpm install package`: fetches the git dependencies into the DPM cache. `dpm update --check` fails the job if one is not pinned to a commit.
 - `dpm build --all`: builds the package DAR and the `unittests/` package that depends on it.
 - `--daml-yaml` and `--dar`: point failures to the assertion in the package under test and check them against its compiled DAR.
 - `--junit`: writes JUnit XML for the CI system.

@@ -32,7 +32,8 @@ The ledger user the token identifies needs rights for the party you pass:
 
 | Command | Right |
 | --- | --- |
-| `dpm trace <update-id>`, `compare`, `--command-id` | `CanReadAs` or `CanActAs` for the `--read-as` party |
+| `dpm trace <update-id>`, `compare` | `CanReadAs` or `CanActAs` for the `--read-as` party |
+| `--command-id` | `CanReadAs` or `CanActAs` for the `--act-as` or `--read-as` party. The party must be one that submitted the command |
 | `submit`, `prepare` | `CanActAs` for the `--act-as` party |
 
 The HTTP status code tells you which problem you have:
